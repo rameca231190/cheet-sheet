@@ -20,5 +20,5 @@ docker  build -t  flask:v1 .
 ### Run image
 
 ```
-docker run -it -p 5000:5000 --name=flask 75dd93600ee7
+docker run -dti -p 5000:5000 --name=flask 75dd93600ee7
 ```
