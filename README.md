@@ -21,4 +21,6 @@ docker  build -t  flask:v1 .
 
 ```
 docker run -dti -p 5000:5000 --name=flask 75dd93600ee7
+
+-p first port is port on which it will run in the host, second port container port where app running
 ```
