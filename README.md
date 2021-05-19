@@ -24,3 +24,12 @@ docker run -dti -p 5000:5000 --name=flask 75dd93600ee7
 
 -p first port is port on which it will run in the host, second port container port where app running
 ```
+
+
+### Python flask
+
+```
+$ export FLASK_APP=hello.py
+$ python -m flask run
+ * Running on http://127.0.0.1:5000/
+```
