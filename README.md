@@ -48,8 +48,12 @@ k auth can-i create deployments
 k auth can-i create pods --as dev-user --namespace tesst
 
 # Check same for service accounts
-
-
 ```
 
+# Identify the authorization modes configured on the cluster
+
+```
+kubectl describe pod kube-apiserver-controlplane -n kube-system | grep -i mode
+
+```
 
