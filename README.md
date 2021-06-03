@@ -57,6 +57,26 @@ kubectl describe pod kube-apiserver-controlplane -n kube-system | grep -i mode
 
 ```
 
+# To check files contain the kubelet configuration
+
+```
+ps -ef | grep /usr/bin/kubelet | grep -i config
+```
+
+# Curl the pod thru kubelet
+
+```
+curl -sk https://localhost:10250/pods
+```
+
+Check metrics on kubelet read only port
+
+```
+curl -sk http://localhost:10255/metrics 
+
+# To disable set read only port to 0 in kubelet.conf <readOnlyPort: 0>
+```
+
 #Alias for k8s
 
 ```
