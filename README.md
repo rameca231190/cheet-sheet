@@ -57,3 +57,9 @@ kubectl describe pod kube-apiserver-controlplane -n kube-system | grep -i mode
 
 ```
 
+#Alias for k8s
+
+```
+alias k='kubectl'
+```
+
