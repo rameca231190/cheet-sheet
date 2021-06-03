@@ -33,3 +33,23 @@ $ export FLASK_APP=hello.py
 $ python -m flask run
  * Running on http://127.0.0.1:5000/
 ```
+
+
+
+## k8s commands
+
+
+
+```
+# To check if you as a user can do something specific
+k auth can-i create deployments
+
+# For different user
+k auth can-i create pods --as dev-user --namespace tesst
+
+# Check same for service accounts
+
+
+```
+
+
