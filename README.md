@@ -34,6 +34,19 @@ $ python -m flask run
  * Running on http://127.0.0.1:5000/
 ```
 
+### Python
+
+check exit code of os.system last command.
+
+```
+import os
+import subprocess
+import sys
+
+home_dir = os.system("ls")
+print("%d" % home_dir)
+```
+
 
 
 ## k8s commands
