@@ -96,3 +96,19 @@ curl -sk http://localhost:10255/metrics
 alias k='kubectl'
 ```
 
+
+# Groovy
+
+Manual Judgement
+```
+   stage('Manual Judgement For DEV') {
+            agent { label 'docker' }
+            steps {
+                timeout(time:8, unit:'HOURS') {
+                    input("Proceed to DEV ?")
+                }
+            }
+        }
+```
+
+
