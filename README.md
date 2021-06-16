@@ -123,12 +123,83 @@ pipeline {
 When any of
 
 ```
-stages {
-        stage ("Initializing SBX") {
-            when {
-                anyOf{
-                    expression { params.CLUSTER_ENV == 'sbx' }
-                }
-            }
+stage ("Initializing SBX") {
+    when {
+      anyOf{
+        expression { params.CLUSTER_ENV == 'sbx' }
+      }
+    }
+```
+
+When condition before agent
+```
+stage ("Initializing DEV") {
+    when {
+       beforeAgent true
+       expression { params.CLUSTER_ENV == 'dev' }
+    }
+
+```
+
+When conditino for branches
+
+```
+stage('master-branch-stuff') {
+    when {
+        branch 'master'
+    }
+    steps {
+        echo 'run this stage - ony if the branch = master branch'
+    }
+}
+```
+
+```
+stage('feature-branch-stuff') {
+    when {
+        branch 'feature/*'
+    }
+    steps {
+        echo 'run this stage - only if the branch name started with feature/'
+    }
+}
+```
+
+```
+stage('expression-branch') {
+    when {
+        expression {
+            return env.BRANCH_NAME != 'master';
+        }
+    }
+    steps {
+        echo 'run this stage - when branch is not equal to master'
+    }
+}
+```
+
+```
+stage('env-specific-stuff') {
+    when { 
+        environment name: 'NAME', value: 'this' 
+    }
+    steps {
+        echo 'run this stage - only if the env name and value matches'
+    }
+}
+
+```
+
+Post actions
+Always
+```
+post {
+     always {
+         script {
+             sh "find . -type d -name .terraform -exec rm -rfv {} +"
+         }
+     }
+}
+
 ```
 
