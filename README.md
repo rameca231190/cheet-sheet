@@ -120,3 +120,15 @@ pipeline {
 ```
 
 
+When any of
+
+```
+stages {
+        stage ("Initializing SBX") {
+            when {
+                anyOf{
+                    expression { params.CLUSTER_ENV == 'sbx' }
+                }
+            }
+```
+
