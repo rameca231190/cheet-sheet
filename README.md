@@ -202,4 +202,23 @@ post {
 }
 
 ```
+Failed and success
+
+```
+post {
+    failure {
+        mail (to: 'email@gmail.com',
+        subject: "Job '${env.JOB_NAME}' (${env.BUILD_NUMBER}) failed.", 
+        body: "Please visit ${env.BUILD_URL} for further information."
+        );
+    }
+    success{
+        mail (to: 'email@gmail.com',
+        subject: "Job '${env.JOB_NAME}' (${env.BUILD_NUMBER}) success.",
+        body: "Please visit ${env.BUILD_URL} for further information."
+        );
+    }
+}
+
+```
 
