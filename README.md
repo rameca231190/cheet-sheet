@@ -111,4 +111,12 @@ Manual Judgement
         }
 ```
 
+Paremether choice
+```
+pipeline {
+    parameters{
+        choice(name: 'CLUSTER_ENV', choices: "None\sbx\ndev\nqa\nstage", description: 'Select the desire environment')
+    }
+```
+
 
