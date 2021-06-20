@@ -63,6 +63,13 @@ k auth can-i create pods --as dev-user --namespace tesst
 # Check same for service accounts
 ```
 
+#Since the kube-apiserver is running as pod you can check the process to see enabled and disabled plugins.
+
+
+```
+ps -ef | grep kube-apiserver | grep admission-plugins
+```
+
 # Identify the authorization modes configured on the cluster
 
 ```
