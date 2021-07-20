@@ -9,6 +9,29 @@ git config --global user.password "your password"
 ```
 
 
+# Systemctl
+
+## To list all the services
+```
+systemctl list-units --type service
+```
+### To disable and remove unwanted services
+```
+systemctl stop apache
+systemctl disable apache
+apt remove apache
+```
+## Remove the unit file 
+```
+rm /lib/systemd/system/nginx.service
+```
+
+## List all installed packages
+```
+apt list --installed
+```
+
+
 # Docker sheet
 
 ### Build image
