@@ -21,6 +21,16 @@ systemctl stop apache
 systemctl disable apache
 apt remove apache
 ```
+
+## Find out systemctl service
+```
+netstat -tulpn | grep 8088
+systemctl list-units --type service | grep -i openlitespeed
+systemctl stop lshttpd.service
+systemctl disable lshttpd.service
+apt list --installed | grep openlitespeed
+apt remove openlitespeed
+```
 ## Remove the unit file 
 ```
 rm /lib/systemd/system/nginx.service
