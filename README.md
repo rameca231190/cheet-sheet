@@ -137,7 +137,7 @@ alias k='kubectl'
 ```
 
 
-# Groovy
+# Groovy Jenkins
 
 Manual Judgement
 ```
@@ -260,5 +260,17 @@ post {
     }
 }
 
+```
+
+
+Trigger Jenkins pipeline thru CLI
+
+```
+CLUSTER_ENV="sbx"
+username="username"
+token="TOKEN"
+
+ 
+curl -X POST -I -v --insecure -u $username:$token "https://jenkins.endpoint.com/job/Folder_name/job/job-name/job/develop/buildWithParameters?token=my-token&CLUSTER_ENV=$CLUSTER_ENV"
 ```
 
