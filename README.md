@@ -135,7 +135,21 @@ curl -sk http://localhost:10255/metrics
 ```
 alias k='kubectl'
 ```
+# Ubuntu
 
+Check distribution version
+```
+lsb_release -a
+cat /etc/lsb-release
+```
+Upgrade to Ubuntu 20.04 LTS (Focal Fossa)
+```
+sudo apt install update-manager-core
+sudo do-release-upgrade -d
+
+promt 'yes' everywhere
+
+```
 
 # Groovy Jenkins
 
