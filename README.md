@@ -147,7 +147,7 @@ Upgrade to Ubuntu 20.04 LTS (Focal Fossa)
 sudo apt install update-manager-core
 sudo apt-get update
 sudo apt-get upgrade -y
-sudo apt-get dist-upgrade
+sudo apt-get dist-upgrade -y
 ```
 #After performing the above actions, we can proceed to the next step.
 
