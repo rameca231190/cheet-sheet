@@ -145,10 +145,20 @@ cat /etc/lsb-release
 Upgrade to Ubuntu 20.04 LTS (Focal Fossa)
 ```
 sudo apt install update-manager-core
-sudo do-release-upgrade -d
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt-get dist-upgrade
+```
+#After performing the above actions, we can proceed to the next step.
+
+```
+sudo do-release-upgrade
+But this time usually reminds you that you need to reboot, so let's reboot.
 
 promt 'yes' everywhere
 
+
+sudo reboot
 ```
 
 # Groovy Jenkins
