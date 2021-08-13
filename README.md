@@ -180,6 +180,11 @@ Paremether choice
 pipeline {
     parameters{
         choice(name: 'CLUSTER_ENV', choices: "None\sbx\ndev\nqa\nstage", description: 'Select the desire environment')
+        string(
+          name: 'INPUT_ID', 
+          defaultValue: 'None', 
+          description: 'Enter the Input ID (Between 9000 - 9999)'
+          )
     }
 ```
 
