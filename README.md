@@ -1,5 +1,16 @@
 # Git sheet
 
+## Helm template
+
+Configmap from the file dynamic name
+```
+{{ printf "%s.krb5.conf" .Values.KRB5_REALM | .Files.Get | indent 4 }}
+Or you could parenthesize the expression:
+
+{{ .Files.Get (printf "%s.krb5.conf" .Values.KRB5_REALM) | indent 4 }}
+
+```
+
 
 ### To set username and password credentials in github outomatically 
 ```
