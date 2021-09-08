@@ -114,6 +114,12 @@ k auth can-i create pods --as dev-user --namespace tesst
 ps -ef | grep kube-apiserver | grep admission-plugins
 ```
 
+#Check what is the usage for containers to different pods
+
+```
+ k top po -n test --containers
+```
+
 # Identify the authorization modes configured on the cluster
 
 ```
