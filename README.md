@@ -172,6 +172,29 @@ promt 'yes' everywhere
 sudo reboot
 ```
 
+# Istio
+
+
+Use istioctl to check proxy server config.
+
+```
+istioctl proxy-config clusters <<name-of-pod>> -n <<namespace-where-pod-is-deployed>>
+```
+
+Configure istio proxy to make discovery not to all cluster services but only to the ones it needs with istio.
+```
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  egress:
+  - hosts:
+    - "./*"
+    - "istio-system/*"
+```
+
 # Groovy Jenkins
 
 Manual Judgement
