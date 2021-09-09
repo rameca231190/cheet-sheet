@@ -201,6 +201,13 @@ spec:
     - "istio-system/*"
 ```
 
+If using probes and istio-proxy as a sidecar add bellow annotation to pod template to avoid connection issues.
+
+```
+annotations:
+  sidecar.istio.io/rewriteAppHTTPProbers: "true"
+```
+
 # Groovy Jenkins
 
 Manual Judgement
