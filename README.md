@@ -1,5 +1,16 @@
 # Git sheet
 
+## Linux
+
+Awk from the one word
+
+Everything what goes after -F (m-) is the symbol after which it should grep
+```
+| awk -Fm- '{ print $2 }'
+```
+
+
+
 ## Helm template
 
 Configmap from the file dynamic name
