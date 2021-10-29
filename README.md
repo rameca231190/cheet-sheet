@@ -9,6 +9,16 @@ Everything what goes after -F (m-) is the symbol after which it should grep
 | awk -Fm- '{ print $2 }'
 ```
 
+## Inside alpine container
+
+
+Install curul and telnet
+```
+apk update
+apk add curl jq
+apk add tcptraceroute
+```
+
 
 
 ## Helm template
