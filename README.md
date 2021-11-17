@@ -128,6 +128,21 @@ home_dir = os.system("ls")
 print("%d" % home_dir)
 ```
 
+Linux command with return code
+
+```
+from subprocess import run
+
+print( 'Running command...' )
+p = run( [ 'cat', '/foo' ] )
+if p.returncode != 0:
+    raise Exception( f'Invalid result failed: { p.returncode }' )
+    
+
+print( 'All done!' )
+
+```
+
 
 
 ## k8s commands
