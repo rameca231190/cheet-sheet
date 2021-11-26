@@ -185,6 +185,12 @@ kubectl describe pod kube-apiserver-controlplane -n kube-system | grep -i mode
 ps -ef | grep /usr/bin/kubelet | grep -i config
 ```
 
+# Curl endpoint with response on seconds
+
+```
+curl -o /dev/null -s -w %{time_total}  endpoint:port/path
+```
+
 # Curl the pod thru kubelet
 
 ```
