@@ -396,6 +396,15 @@ post {
 
 ```
 
+Post clean ws
+```
+post { 
+        always { 
+            cleanWs()
+        }
+    }
+```
+
 
 Trigger Jenkins pipeline thru CLI
 
