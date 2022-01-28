@@ -280,6 +280,12 @@ Manual Judgement
         }
 ```
 
+Clone repo inside docker container
+
+```
+checkout([$class: 'GitSCM', branches: [[name: '*/main']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'cred_id', url: 'repo_url']]])
+```
+
 Paremether choice
 ```
 pipeline {
