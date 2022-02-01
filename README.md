@@ -47,6 +47,13 @@ $ terraform import google_compute_target_instance.default {{name}
 
 ```
 
+Install terraform 13.5.5
+
+```
+wget https://releases.hashicorp.com/terraform/0.13.5/terraform_0.13.5_linux_amd64.zip
+sudo mv terraform /usr/local/bin/
+```
+
 
 
 ### To set username and password credentials in github outomatically 
