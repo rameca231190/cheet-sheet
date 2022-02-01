@@ -430,3 +430,43 @@ token="TOKEN"
 curl -X POST -I -v --insecure -u $username:$token "https://jenkins.endpoint.com/job/Folder_name/job/job-name/job/develop/buildWithParameters?token=my-token&CLUSTER_ENV=$CLUSTER_ENV"
 ```
 
+
+# Istio disable
+
+```
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  annotations:
+  name: kiali
+  namespace: istio-system
+spec:
+  host: kiali.istio-system.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+```
+
+```
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  annotations:
+  name: kiali-virtual-service
+  namespace: istio-system
+spec:
+  gateways:
+  - istio-system/https-gateway
+  hosts:
+  - example.com
+  http:
+  - match:
+    - uri:
+        prefix: /kiali/
+    route:
+    - destination:
+        host: kiali
+        port:
+          number: 20001
+```
+
