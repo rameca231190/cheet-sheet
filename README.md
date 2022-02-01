@@ -431,7 +431,7 @@ curl -X POST -I -v --insecure -u $username:$token "https://jenkins.endpoint.com/
 ```
 
 
-# Istio disable
+# Istio envoy disable
 
 ```
 apiVersion: networking.istio.io/v1beta1
