@@ -433,7 +433,12 @@ curl -X POST -I -v --insecure -u $username:$token "https://jenkins.endpoint.com/
 Branch name env jenkins
 
 ```
-IMAGE_TAG           = """${sh( returnStdout: true,script: "echo ${env.BRANCH_NAME}-${env.BUILD_NUMBER} |sed -r 's,/,-,g'")}"""
+environment {
+        BRANCH_NAME = "${GIT_BRANCH.split('/').size() > 1 ? GIT_BRANCH.split('/')[1..-1].join('/') : GIT_BRANCH}"
+        IMAGE_TAG = "${BRANCH_NAME}_${env.BUILD_ID}"
+        registry = 'https://registry.hub.docker.com'
+        repository = 'example/base-image'
+    }
 ```
 
 # Istio envoy disable
