@@ -430,6 +430,11 @@ token="TOKEN"
 curl -X POST -I -v --insecure -u $username:$token "https://jenkins.endpoint.com/job/Folder_name/job/job-name/job/develop/buildWithParameters?token=my-token&CLUSTER_ENV=$CLUSTER_ENV"
 ```
 
+Branch name env jenkins
+
+```
+IMAGE_TAG           = """${sh( returnStdout: true,script: "echo ${env.BRANCH_NAME}-${env.BUILD_NUMBER} |sed -r 's,/,-,g'")}"""
+```
 
 # Istio envoy disable
 
