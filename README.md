@@ -9,6 +9,12 @@ Everything what goes after -F (m-) is the symbol after which it should grep
 | awk -Fm- '{ print $2 }'
 ```
 
+Delete failed pods in all namespaces
+```
+kubectl get pods -A| grep -v "Running" | grep -v "Completed" | awk '{system("kubectl -n " $1 " delete po " $2 " --force --grace-period=0")}'
+```
+
+
 ## Inside alpine container
 
 
