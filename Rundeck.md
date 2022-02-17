@@ -3,49 +3,54 @@ Steps we followed on CentOS 7 OS are captured below .
 
 
 
-Below mentioned commands are executed to add the Rundeck download details to yum repo :
+## Below mentioned commands are executed to add the Rundeck download details to yum repo :
 
+```
 rpm -Uvh http://repo.rundeck.org/latest.rpm
+```
 
-
-Install Rundeck using yum comm and along with Java
-
+## Install Rundeck using yum comm and along with Java
+```
 sudo yum install rundeck java
+```
 
 
+## If Rundeck needs update it can be updated from following command
 
-If Rundeck needs update it can be updated from following command
-
+```
 sudo yum update rundeck
+```
 
-
-Edit /etc/rundeck/rundeck-config.properties file
-
+## Edit /etc/rundeck/rundeck-config.properties file
+```
 grails.serverURL=http://<hostname>:4440
+```
 
+## To start Rundeck:
 
-To start Rundeck:
-
+```
 sudo service rundeckd start
+```
 
-
-Verify that the service started correctly by tailing the logs:
-
+## Verify that the service started correctly by tailing the logs:
+```
 tail -f /var/log/rundeck/service.log
-
-Once the service is up and running, we can see following line in the logs
-
+```
+##Once the service is up and running, we can see following line in the logs
+```
 Grails application running at http://localhost:4440 in environment: production
+```
 
+## Rundeck has a CLI It can be installed with following commands,
 
-Rundeck has a CLI It can be installed with following commands,
-
+```
 sudo wget https://binary.com/rundeck/rundeck-rom/rpm -O bintray.repo
 sudo mv binary.repo /etc/yum.repos.d/
 sudo yum install runback-cli
+```
 
-
-Project can be created with following steps
+## Project can be created with following steps
+```
 Export RD_URL ex:
 
 export RD_URL=http://<hostname>:4440
@@ -55,7 +60,7 @@ rd projects create -p <project_name> -- \
 --project.label="<some lable of the project>" \
 
 --project.ssh-keypath=</path/of/private-key
-
+```
 
 ## Roman's work starts from here
   
