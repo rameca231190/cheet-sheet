@@ -57,52 +57,70 @@ rd projects create -p <project_name> -- \
 --project.ssh-keypath=</path/of/private-key
 
 
-Roman's work starts from here
+## Roman's work starts from here
   
-```  
-To upgrade rundeck:
+ 
+## To upgrade rundeck:
 
 
-
+```
 yum upgrade rundeck rundeck-config
 
 systemctl restart rundeckd
 
 systemctl status rundeckd
+```
 
 
-
-Create DNS request using bellow URL:
-
-
-Create certificates request:
+## Create DNS request using bellow URL:
 
 
-Once you got certificates:
+## Create certificates request:
+
+
+## Once you got certificates:
 
 
 1.- install Rundeck. (Skip this step if you have rundeck already)
+```
 rpm -Uvh https://repo.rundeck.org/latest.rpm
 yum install rundeck
+```
 2.- create keystore: (if you already have a certificate in .key/.crt or .pk12 formats, skip to 2b)
+```
 keytool -keystore /etc/rundeck/ssl/keystore -alias rundeck -genkey -keyalg RSA -keypass password -storepass password
+```
 2b.- in case you have your own certificate, do below:
 If you have .crt and .key files, create a .p12 file:
-
+```
 openssl pkcs12 -export -in YOUR.crt -inkey YOUR.key -out NEW.p12
+  
+```  
 Convert it to a .jks (also if you have only the .p12 file):
-
+```
 keytool -importkeystore -destkeystore keystore -srckeystore NEW.p12 -srcstoretype pkcs12
+```
+
 3.- copy keystore as truststore.
 4.- edit /etc/rundeck/ssl/ssl.properties file:
-keystore=/etc/rundeck/ssl/keystore keystore.password=password key.password=password truststore=/etc/rundeck/ssl/truststore truststore.password=password
-5.- edit /etc/rundeck/framework.properties file:
-framework.server.port = 4443 framework.server.url = https://localhost:4443
-6.- edit /etc/rundeck/rundeck-config.properties file:
-grails.serverURL=https://localhost:4443
-7.- edit/create /etc/sysconfig/rundeckd file:
-export RUNDECK_WITH_SSL=true
-8.- start the rundeck service.
-systemctl restart rundeckd
   
 ```
+keystore=/etc/rundeck/ssl/keystore keystore.password=password key.password=password truststore=/etc/rundeck/ssl/truststore truststore.password=password
+```
+5.- edit /etc/rundeck/framework.properties file:
+```
+framework.server.port = 4443 framework.server.url = https://localhost:4443
+```
+6.- edit /etc/rundeck/rundeck-config.properties file:
+```
+grails.serverURL=https://localhost:4443
+```
+7.- edit/create /etc/sysconfig/rundeckd file:
+```
+export RUNDECK_WITH_SSL=true
+```
+8.- Restart the rundeck service.
+```
+systemctl restart rundeckd
+```
+
