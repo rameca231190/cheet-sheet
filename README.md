@@ -60,6 +60,13 @@ wget https://releases.hashicorp.com/terraform/0.13.5/terraform_0.13.5_linux_amd6
 sudo mv terraform /usr/local/bin/
 ```
 
+Terraform switch versions
+
+```
+tfenv list-remote
+tfenv install 0.11.14
+tfenv use 0.12.0
+```
 
 
 ### To set username and password credentials in github outomatically 
