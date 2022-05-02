@@ -6,3 +6,9 @@ Install keytool on alpine
  apk --no-cache add openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/commu
 nity
  ```
+ 
+ INstall envsubst
+ 
+ ```
+ apk add gettext
+ ```
