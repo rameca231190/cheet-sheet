@@ -12,4 +12,4 @@ oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","p
 
 oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/labels/<new_label_key>","value":"<new_label_value>"}]'
 
-oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/labels","value":{"<label_key_with_slash>":"<new_label_value>"}}]'
+oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/labels/<label_key>","value":"<new_label_value>"}]'
