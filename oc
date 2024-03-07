@@ -1,1 +1,4 @@
 oc patch machineset my-machineset -n my-namespace --type='json' -p '{"spec":{"template":{"metadata":{"annotations":{"example.com/foo":"bar"}}}}}'
+
+
+oc patch machineset <machine_set_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/spec/template/metadata/annotations/<annotation_key>","value":"<new_annotation_value>"}]'
