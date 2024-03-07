@@ -1,1 +1,1 @@
-oc patch machineset <machine_set_name> -p '{"spec":{"template":{"metadata":{"annotations":{"<annotation_key>":"<new_annotation_value>"}}}}}'
+oc patch machineset my-machineset -n my-namespace --type='json' -p '{"spec":{"template":{"metadata":{"annotations":{"example.com/foo":"bar"}}}}}'
