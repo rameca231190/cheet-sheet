@@ -1,1 +1,4 @@
 oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/annotations/<annotation_key>","value":"<new_annotation_value>"}]'
+
+
+oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/annotations/<annotation_key>","value":"<new_annotation_value>"},{"op":"add","path":"/metadata/annotations","value":{}}]'
