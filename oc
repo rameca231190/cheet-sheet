@@ -1,0 +1,1 @@
+oc patch machineset <machine_set_name> -p '{"spec":{"template":{"metadata":{"annotations":{"<annotation_key>":"<new_annotation_value>"}}}}}'
