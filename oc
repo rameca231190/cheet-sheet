@@ -1,30 +1,34 @@
-oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/annotations/<annotation_key>","value":"<new_annotation_value>"}]'
-
-
-oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/annotations/<annotation_key>","value":"<new_annotation_value>"},{"op":"add","path":"/metadata/annotations","value":{}}]'
-
-
-oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/annotations","value":{"<annotation_key>":"<new_annotation_value>"}}]'
-
-
-oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/annotations","value":{"<annotation_key_with_slash>":"<new_annotation_value>"}}]'
-
-
-oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/labels/<new_label_key>","value":"<new_label_value>"}]'
-
-oc patch machine <machine_name> -n <namespace> --type='json' -p '[{"op":"add","path":"/metadata/annotations/<new_annotation_key>","value":"<new_annotation_value>"}, {"op":"add", "path":"/metadata/annotations/<existing_annotation_key>", "value":"<existing_annotation_value>"}]'
-
-
-
 #!/bin/bash
 
-# Set the namespace where the machines reside
-NAMESPACE="your-namespace"
+max_retries=3   # Number of retries
+delay=5         # Delay in seconds between retries
+tigerastatusfilename="tigerastatus_failure_log.txt"
 
-# Get the list of machine names
-MACHINE_NAMES=$(oc get machines -n $NAMESPACE -o jsonpath='{.items[*].metadata.name}')
+# Clear the log file before appending
+> $tigerastatusfilename
 
-# Iterate over each machine and apply the patch command
-for MACHINE_NAME in $MACHINE_NAMES; do
-    oc patch machine $MACHINE_NAME -n $NAMESPACE --type='json' -p '[{"op":"add","path":"/metadata/annotations/<new_annotation_key>","value":"<new_annotation_value>"}, {"op":"add", "path":"/metadata/annotations/<existing_annotation_key>", "value":"<existing_annotation_value>"}]'
+oc get tigerastatus > tigera_output.txt
+
+cat tigera_output.txt | while read line
+do
+    component=$(echo $line | cut -d ' ' -f1)
+    available=$(echo $line | cut -d ' ' -f2)
+    echo "component is $component available is $available"
+    
+    retry_count=0
+    while [ "$available" = "False" ] && [ $retry_count -lt $max_retries ]; do
+        echo "Retrying for component $component... attempt $((retry_count + 1))"
+        sleep $delay
+        available=$(oc get tigerastatus $component -o jsonpath='{.status.conditions[-1:].available}')
+        retry_count=$((retry_count + 1))
+    done
+
+    if [ "$available" = "False" ]; then
+        reason=$(oc get tigerastatus $component -o jsonpath='{.status.conditions[-1:].reason}')
+        type=$(oc get tigerastatus $component -o jsonpath='{.status.conditions[-1:].type}')
+        transitionTime=$(oc get tigerastatus $component -o jsonpath='{.status.conditions[-1:].lastTransitionTime}')
+        status=$(oc get tigerastatus $component -o jsonpath='{.status.conditions[-1:].status}')
+        
+        echo "Reason for $component failure is $reason and stage type is $type since $transitionTime" >> $tigerastatusfilename
+    fi
 done
