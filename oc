@@ -1,34 +1,80 @@
-#!/bin/bash
+Steps to add the latest repository and install the required kernel package:
+Check available repositories:
+Run the following command to list enabled repositories:
 
-max_retries=3   # Number of retries
-delay=5         # Delay in seconds between retries
-tigerastatusfilename="tigerastatus_failure_log.txt"
+bash
+Copy
+Edit
+yum repolist
+Enable the necessary repository:
+If you see repositories related to BaseOS or AppStream, ensure they are enabled using:
 
-# Clear the log file before appending
-> $tigerastatusfilename
+bash
+Copy
+Edit
+yum-config-manager --enable rhel-8-for-x86_64-baseos-rpms
+yum-config-manager --enable rhel-8-for-x86_64-appstream-rpms
+Manually add a repository if not available:
+If the repository containing the required kernel version is not listed, you may need to manually add it by creating a new repo file:
 
-oc get tigerastatus > tigera_output.txt
+bash
+Copy
+Edit
+sudo vi /etc/yum.repos.d/custom.repo
+Add the following content (modify the base URL according to your RHEL version and subscription):
 
-cat tigera_output.txt | while read line
-do
-    component=$(echo $line | cut -d ' ' -f1)
-    available=$(echo $line | cut -d ' ' -f2)
-    echo "component is $component available is $available"
-    
-    retry_count=0
-    while [ "$available" = "False" ] && [ $retry_count -lt $max_retries ]; do
-        echo "Retrying for component $component... attempt $((retry_count + 1))"
-        sleep $delay
-        available=$(oc get tigerastatus $component -o jsonpath='{.status.conditions[-1:].available}')
-        retry_count=$((retry_count + 1))
-    done
+ini
+Copy
+Edit
+[rhel8-latest]
+name=RHEL 8 Latest Kernel Repo
+baseurl=http://mirror.centos.org/centos/8/BaseOS/x86_64/os/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+Clean the yum cache:
+After adding the repository, clear and update your cache:
 
-    if [ "$available" = "False" ]; then
-        reason=$(oc get tigerastatus $component -o jsonpath='{.status.conditions[-1:].reason}')
-        type=$(oc get tigerastatus $component -o jsonpath='{.status.conditions[-1:].type}')
-        transitionTime=$(oc get tigerastatus $component -o jsonpath='{.status.conditions[-1:].lastTransitionTime}')
-        status=$(oc get tigerastatus $component -o jsonpath='{.status.conditions[-1:].status}')
-        
-        echo "Reason for $component failure is $reason and stage type is $type since $transitionTime" >> $tigerastatusfilename
-    fi
-done
+bash
+Copy
+Edit
+yum clean all
+yum makecache
+Install the desired kernel package:
+Now install the required kernel version:
+
+bash
+Copy
+Edit
+yum install kernel-4.18.0-553.33.1.el8_10.x86_64
+Verify installation:
+Once installed, confirm the kernel version using:
+
+bash
+Copy
+Edit
+rpm -q kernel
+If you're using RHEL with a subscription, ensure that your system is registered with Red Hat and can access the appropriate repositories using:
+
+bash
+Copy
+Edit
+subscription-manager register
+subscription-manager attach --auto
+subscription-manager repos --enable rhel-8-for-x86_64-baseos-rpms
+Let me know if you need more help!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ChatGPT can make mistakes. Check important info.
