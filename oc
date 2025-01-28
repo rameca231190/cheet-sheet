@@ -1,8 +1,6 @@
 start=$(parted /dev/nvme0n1 -ms print free | awk -F: '$2 ~ /Free Space/ {print $1}' | tail -1) && \
 end="100%" && \
-parted /dev/nvme0n1 --script mkpart primary ${start}MB ${end} && \
+parted /dev/nvme0n1 --script mkpart primary ext4 ${start}MB ${end} && \
 new_partition=$(lsblk -nrpo NAME,TYPE | awk '$2=="part" && /nvme0n1/ {print $1}' | tail -1) && \
 pvcreate ${new_partition} && \
-vgextend rootvg ${new_partition} && \
-lvextend -l +100%FREE /dev/mapper/rootvg-home && \
-xfs_growfs /home
+vgextend rootvg ${new_partition}
