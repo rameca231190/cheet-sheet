@@ -25,4 +25,14 @@
       ignore_errors: yes
 
     - name: Get Free PE in rootvg
-      comm
+      command: vgdisplay -c rootvg | awk -F ':' '{print $16}'
+      register: free_pe
+      changed_when: false
+
+    - name: Extend Logical Volume rootvg-home
+      command: lvextend -l +{{ free_pe.stdout }} /dev/mapper/rootvg-home
+      when: free_pe.stdout | int > 0
+
+    - name: Resize Filesystem (XFS)
+      command: xfs_growfs /home
+      when: free_pe.stdout | int > 0
