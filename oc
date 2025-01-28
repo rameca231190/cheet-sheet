@@ -1,4 +1,15 @@
- - name: Extract start and end positions for new partition
+---
+- name: Extend LVM using remaining free space
+  hosts: localhost
+  become: yes
+  tasks:
+
+    - name: Get disk free space information
+      shell: parted /dev/nvme0n1 print free | awk '/Free Space/ {print $2, $3}'
+      register: free_space
+      changed_when: false
+
+    - name: Extract start and end positions for new partition
       set_fact:
         start_position: "{{ free_space.stdout_lines[-1].split()[0] }}"
         end_position: "{{ free_space.stdout_lines[-1].split()[1] }}"
@@ -37,3 +48,22 @@
     - name: Extend Volume Group (VG) rootvg with the new partition
       shell: "vgextend rootvg {{ new_partition.stdout }}"
       when: new_partition.stdout is defined
+
+    - name: Extend Logical Volume (LV) rootvg-home using all available space
+      shell: "lvextend -l +100%FREE /dev/mapper/rootvg-home"
+    
+    - name: Resize the filesystem on rootvg-home
+      shell: "xfs_growfs /home"
+      when: "'xfs' in lookup('pipe', 'df -T /home | tail -1 | awk \"{print $2}\"')"
+
+    - name: Resize the filesystem on rootvg-home (ext4)
+      shell: "resize2fs /dev/mapper/rootvg-home"
+      when: "'ext4' in lookup('pipe', 'df -T /home | tail -1 | awk \"{print $2}\"')"
+
+    - name: Verify updated disk space
+      command: df -h
+      register: disk_usage
+      changed_when: false
+
+    - debug:
+        msg: "{{ disk_usage.stdout_lines }}"
