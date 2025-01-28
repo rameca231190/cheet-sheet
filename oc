@@ -1,81 +1,38 @@
-3. Enable Additional RHEL Repositories
-Ensure all relevant repositories for your system version are enabled:
+- name: Setup LVM on /dev/sdb and Extend rootvg-home
+  hosts: localhost
+  become: yes
+  tasks:
 
-bash
-Copy
-Edit
-subscription-manager repos --list-enabled
-If needed, enable specific repositories:
+    - name: Check if /dev/sdb1 partition already exists
+      command: lsblk -no NAME /dev/sdb
+      register: partition_check
+      changed_when: false
 
-bash
-Copy
-Edit
-subscription-manager repos --enable=rhel-8-for-x86_64-baseos-rpms \
-                           --enable=rhel-8-for-x86_64-appstream-rpms \
-                           --enable=rhel-8-for-x86_64-highavailability-rpms
-4. Use RHEL EUS (Extended Update Support) or HTB (Hotfix) Repos
-Some kernel versions might be available in Extended Update Support or Hotfix repositories:
+    - name: Create partition on /dev/sdb (if not already partitioned)
+      command: >
+        echo -e "n\np\n1\n\n+50G\nt\n8e\nw" | fdisk /dev/sdb
+      when: "'sdb1' not in partition_check.stdout"
+    
+    - name: Ensure kernel recognizes the new partition
+      command: partprobe /dev/sdb
 
-bash
-Copy
-Edit
-subscription-manager repos --enable=rhel-8-for-x86_64-eus-rpms
-subscription-manager repos --enable=rhel-8-for-x86_64-htb-rpms
-After enabling, refresh and check for the package:
+    - name: Create LVM Physical Volume on /dev/sdb1
+      command: pvcreate /dev/sdb1
+      ignore_errors: yes
 
-bash
-Copy
-Edit
-yum clean all
-yum makecache
-yum list kernel-devel --showduplicates
-5. Manually Sync with the Red Hat CDN
-Sometimes the system may not have the latest repository metadata. Run:
+    - name: Extend Volume Group rootvg with /dev/sdb1
+      command: vgextend rootvg /dev/sdb1
+      ignore_errors: yes
 
-bash
-Copy
-Edit
-subscription-manager clean
-yum clean all
-yum repolist
-Then try installing again:
+    - name: Get Free PE in rootvg
+      command: vgdisplay -c rootvg | awk -F ':' '{print $16}'
+      register: free_pe
+      changed_when: false
 
-bash
-Copy
-Edit
-yum install kernel-devel-4.18.0-553.33.1.el8_10.x86_64
-6. Check Red Hat Customer Portal for the Package
-If the package is not yet available in the repositories, it might not have been published or synchronized with your region yet. You can manually check on the Red Hat Customer Portal to confirm if the version exists.
+    - name: Extend Logical Volume rootvg-home
+      command: lvextend -l +{{ free_pe.stdout }} /dev/mapper/rootvg-home
+      when: free_pe.stdout | int > 0
 
-If it's available, your admin might need to synchronize repositories or apply an update.
-
-7. Contact Red Hat Support
-If the specific kernel version is critical for your use case and isn't available through standard repos, contact Red Hat Support to inquire about the availability or request access to an updated repo.
-
-bash
-Copy
-Edit
-subscription-manager service-level --set=Premium
-Then reach out via:
-
-Red Hat Support Portal
-Command-line tool to open a support case:
-bash
-Copy
-Edit
-redhat-support-tool create --product="Red Hat Enterprise Linux" --version="8"
-If none of these steps work, it's likely that your organization’s repository mirror is not yet updated with the latest package. Let me know if you'd like to troubleshoot further.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    - name: Resize Filesystem (XFS)
+      command: xfs_growfs /home
+      when: free_pe.stdout | int > 0
