@@ -1,38 +1,35 @@
-- name: Setup LVM on /dev/nvme1n1 and Extend rootvg-home
+- name: Extend partition, VG, LV, and filesystem by 100GB
   hosts: localhost
   become: yes
   tasks:
+    - name: Ensure parted is installed
+      package:
+        name: parted
+        state: present
 
-    - name: Check if /dev/nvme1n1p1 partition already exists
-      command: lsblk -no NAME /dev/nvme1n1
+    - name: Check if /dev/nvme0n1p2 exists
+      command: lsblk -no NAME /dev/nvme0n1
       register: partition_check
       changed_when: false
 
-    - name: Create partition on /dev/nvme1n1 (if not already partitioned)
+    - name: Extend partition /dev/nvme0n1p2 by 100GB
       command: >
-        echo -e "n\np\n1\n\n+50G\nt\n8e\nw" | fdisk /dev/nvme1n1
-      when: "'nvme1n1p1' not in partition_check.stdout"
-    
-    - name: Ensure kernel recognizes the new partition
-      command: partprobe /dev/nvme1n1
+        echo -e "resizepart 2 yes" | parted --script /dev/nvme0n1
+      when: "'nvme0n1p2' in partition_check.stdout"
 
-    - name: Create LVM Physical Volume on /dev/nvme1n1p1
-      command: pvcreate /dev/nvme1n1p1
-      ignore_errors: yes
+    - name: Inform the kernel of the updated partition table
+      command: partprobe /dev/nvme0n1
 
-    - name: Extend Volume Group rootvg with /dev/nvme1n1p1
-      command: vgextend rootvg /dev/nvme1n1p1
-      ignore_errors: yes
+    - name: Resize the physical volume on /dev/nvme0n1p2
+      command: pvresize /dev/nvme0n1p2
 
-    - name: Get Free PE in rootvg
-      command: vgdisplay -c rootvg | awk -F ':' '{print $16}'
-      register: free_pe
-      changed_when: false
+    - name: Extend Logical Volume rootvg-home by 100GB
+      command: lvextend -L +100G /dev/mapper/rootvg-home
 
-    - name: Extend Logical Volume rootvg-home
-      command: lvextend -l +{{ free_pe.stdout }} /dev/mapper/rootvg-home
-      when: free_pe.stdout | int > 0
-
-    - name: Resize Filesystem (XFS)
+    - name: Resize the filesystem on rootvg-home (XFS)
       command: xfs_growfs /home
-      when: free_pe.stdout | int > 0
+      when: "'xfs' in ansible_facts.filesystems"
+
+    - name: Resize the filesystem on rootvg-home (ext4)
+      command: resize2fs /dev/mapper/rootvg-home
+      when: "'ext4' in ansible_facts.filesystems"
