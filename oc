@@ -14,22 +14,26 @@
         start_position: "{{ free_space.stdout_lines[-1].split()[0] }}"
         end_position: "{{ free_space.stdout_lines[-1].split()[1] }}"
 
-    - name: Debug start and end positions
+    - name: Debug extracted start and end positions
       debug:
         msg: "Start: {{ start_position }}, End: {{ end_position }}"
 
-    - name: Create a new primary partition using all remaining free space
-      shell: "parted /dev/nvme0n1 mkpart primary {{ start_position }}MB {{ end_position }}MB"
+    - name: Create an extended partition using all remaining free space
+      shell: "parted /dev/nvme0n1 mkpart extended {{ start_position }}MB {{ end_position }}MB"
       when: start_position | int < end_position | int
 
-    - name: Get the newly created partition name
+    - name: Create a logical partition inside the extended partition
+      shell: "parted /dev/nvme0n1 mkpart logical {{ start_position | int + 1 }}MB {{ end_position }}MB"
+      when: start_position | int < end_position | int
+
+    - name: Get the newly created logical partition name
       shell: lsblk -nrpo NAME,TYPE | awk '$2=="part" && /nvme0n1/ {print $1}' | tail -1
       register: new_partition
       changed_when: false
 
     - name: Ensure the new partition is correct and not an existing one
       fail:
-        msg: "New partition '{{ new_partition.stdout }}' is invalid. Check partition table."
+        msg: "New partition '{{ new_partition.stdout }}' is invalid or already exists. Check partition table."
       when: new_partition.stdout in ["/dev/nvme0n1p1", "/dev/nvme0n1p2", "/dev/nvme0n1p3"]
 
     - name: Check if the new partition has an existing filesystem
