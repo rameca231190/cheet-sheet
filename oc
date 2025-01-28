@@ -9,17 +9,22 @@
       register: free_space
       changed_when: false
 
-    - name: Extract start position for new partition
+    - name: Extract and sort start/end positions for new partition
       set_fact:
-        start_position: "{{ free_space.stdout_lines[-1].split()[0] }}"
+        free_space_list: "{{ free_space.stdout_lines | map('split') | list }}"
+    
+    - name: Get last available free space entry
+      set_fact:
+        start_position: "{{ free_space_list[-1][0] }}"
+        end_position: "{{ free_space_list[-1][1] }}"
 
-    - name: Extract end position for new partition
-      set_fact:
-        end_position: "{{ free_space.stdout_lines[-1].split()[1] }}"
+    - name: Validate start and end positions
+      debug:
+        msg: "Start: {{ start_position }}, End: {{ end_position }}"
 
     - name: Create a new primary partition using all remaining free space
-      shell: "parted /dev/nvme0n1 mkpart primary {{ start_position }} {{ end_position }}"
-      when: start_position is defined and end_position is defined
+      shell: "parted /dev/nvme0n1 mkpart primary {{ start_position }}MB {{ end_position }}MB"
+      when: start_position | int < end_position | int
 
     - name: Get the newly created partition name
       shell: lsblk -nrpo NAME,TYPE | awk '$2=="part" && /nvme0n1/ {print $1}' | tail -1
