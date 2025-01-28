@@ -1,35 +1,54 @@
-- name: Extend partition, VG, LV, and filesystem by 100GB
+---
+- name: Extend LVM using remaining free space
   hosts: localhost
   become: yes
   tasks:
-    - name: Ensure parted is installed
-      package:
-        name: parted
-        state: present
 
-    - name: Check if /dev/nvme0n1p2 exists
-      command: lsblk -no NAME /dev/nvme0n1
-      register: partition_check
+    - name: Get disk free space information
+      shell: parted /dev/nvme0n1 print free | awk '/Free Space/ {print $2, $3}'
+      register: free_space
       changed_when: false
 
-    - name: Extend partition /dev/nvme0n1p2 by 100GB
-      command: >
-        echo -e "resizepart 2 yes" | parted --script /dev/nvme0n1
-      when: "'nvme0n1p2' in partition_check.stdout"
+    - name: Extract start position for new partition
+      set_fact:
+        start_position: "{{ free_space.stdout_lines[-1].split()[0] }}"
 
-    - name: Inform the kernel of the updated partition table
-      command: partprobe /dev/nvme0n1
+    - name: Extract end position for new partition
+      set_fact:
+        end_position: "{{ free_space.stdout_lines[-1].split()[1] }}"
 
-    - name: Resize the physical volume on /dev/nvme0n1p2
-      command: pvresize /dev/nvme0n1p2
+    - name: Create a new primary partition using all remaining free space
+      shell: "parted /dev/nvme0n1 mkpart primary {{ start_position }} {{ end_position }}"
+      when: start_position is defined and end_position is defined
 
-    - name: Extend Logical Volume rootvg-home by 100GB
-      command: lvextend -L +100G /dev/mapper/rootvg-home
+    - name: Get the newly created partition name
+      shell: lsblk -nrpo NAME,TYPE | awk '$2=="part" && /nvme0n1/ {print $1}' | tail -1
+      register: new_partition
+      changed_when: false
 
-    - name: Resize the filesystem on rootvg-home (XFS)
-      command: xfs_growfs /home
-      when: "'xfs' in ansible_facts.filesystems"
+    - name: Initialize the new partition as a Physical Volume (PV)
+      shell: "pvcreate {{ new_partition.stdout }}"
+      when: new_partition.stdout is defined
+
+    - name: Extend Volume Group (VG) rootvg with the new partition
+      shell: "vgextend rootvg {{ new_partition.stdout }}"
+      when: new_partition.stdout is defined
+
+    - name: Extend Logical Volume (LV) rootvg-home using all available space
+      shell: "lvextend -l +100%FREE /dev/mapper/rootvg-home"
+    
+    - name: Resize the filesystem on rootvg-home
+      shell: "xfs_growfs /home"
+      when: "'xfs' in lookup('pipe', 'df -T /home | tail -1 | awk \"{print $2}\"')"
 
     - name: Resize the filesystem on rootvg-home (ext4)
-      command: resize2fs /dev/mapper/rootvg-home
-      when: "'ext4' in ansible_facts.filesystems"
+      shell: "resize2fs /dev/mapper/rootvg-home"
+      when: "'ext4' in lookup('pipe', 'df -T /home | tail -1 | awk \"{print $2}\"')"
+
+    - name: Verify updated disk space
+      command: df -h
+      register: disk_usage
+      changed_when: false
+
+    - debug:
+        msg: "{{ disk_usage.stdout_lines }}"
