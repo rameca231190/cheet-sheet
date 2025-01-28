@@ -1,38 +1,28 @@
-- name: Setup LVM on /dev/sdb and Extend rootvg-home
+- name: Setup LVM on /dev/nvme1n1 and Extend rootvg-home
   hosts: localhost
   become: yes
   tasks:
 
-    - name: Check if /dev/sdb1 partition already exists
-      command: lsblk -no NAME /dev/sdb
+    - name: Check if /dev/nvme1n1p1 partition already exists
+      command: lsblk -no NAME /dev/nvme1n1
       register: partition_check
       changed_when: false
 
-    - name: Create partition on /dev/sdb (if not already partitioned)
+    - name: Create partition on /dev/nvme1n1 (if not already partitioned)
       command: >
-        echo -e "n\np\n1\n\n+50G\nt\n8e\nw" | fdisk /dev/sdb
-      when: "'sdb1' not in partition_check.stdout"
+        echo -e "n\np\n1\n\n+50G\nt\n8e\nw" | fdisk /dev/nvme1n1
+      when: "'nvme1n1p1' not in partition_check.stdout"
     
     - name: Ensure kernel recognizes the new partition
-      command: partprobe /dev/sdb
+      command: partprobe /dev/nvme1n1
 
-    - name: Create LVM Physical Volume on /dev/sdb1
-      command: pvcreate /dev/sdb1
+    - name: Create LVM Physical Volume on /dev/nvme1n1p1
+      command: pvcreate /dev/nvme1n1p1
       ignore_errors: yes
 
-    - name: Extend Volume Group rootvg with /dev/sdb1
-      command: vgextend rootvg /dev/sdb1
+    - name: Extend Volume Group rootvg with /dev/nvme1n1p1
+      command: vgextend rootvg /dev/nvme1n1p1
       ignore_errors: yes
 
     - name: Get Free PE in rootvg
-      command: vgdisplay -c rootvg | awk -F ':' '{print $16}'
-      register: free_pe
-      changed_when: false
-
-    - name: Extend Logical Volume rootvg-home
-      command: lvextend -l +{{ free_pe.stdout }} /dev/mapper/rootvg-home
-      when: free_pe.stdout | int > 0
-
-    - name: Resize Filesystem (XFS)
-      command: xfs_growfs /home
-      when: free_pe.stdout | int > 0
+      comm
