@@ -1,6 +1,45 @@
-parted /dev/nvme0n1 --script mkpart primary ext4 107GB 307GB && \
-new_partition=$(lsblk -nrpo NAME,TYPE | awk '$2=="part" && /nvme0n1/ {print $1}' | tail -1) && \
-pvcreate ${new_partition} && \
-vgextend rootvg ${new_partition} && \
-lvextend -l +100%FREE /dev/mapper/rootvg-home && \
-xfs_growfs /home
+1. Remove the existing NVIDIA driver using DNF
+Use the following command to purge all installed NVIDIA packages:
+
+bash
+Copy
+Edit
+sudo dnf remove '*nvidia*'
+This command will remove all packages related to NVIDIA, including drivers, libraries, and dependencies.
+
+2. Enable the RPM Fusion repository (for proprietary drivers)
+If you haven't already enabled RPM Fusion, run these commands:
+
+bash
+Copy
+Edit
+sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+sudo dnf install https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+3. Install the latest NVIDIA driver
+Once RPM Fusion is set up, install the NVIDIA driver:
+
+bash
+Copy
+Edit
+sudo dnf install akmod-nvidia
+This will install the driver and automatically build kernel modules.
+To ensure kernel modules are up to date, you can also run:
+bash
+Copy
+Edit
+sudo akmods --force
+4. Reboot your system
+Reboot your machine to apply the changes:
+
+bash
+Copy
+Edit
+sudo reboot
+5. Verify the installation
+After rebooting, check if the NVIDIA driver is working:
+
+bash
+Copy
+Edit
+nvidia-smi
+This process should successfully update and apply the NVIDIA driver on a system using DNF.
