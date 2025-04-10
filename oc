@@ -3,50 +3,52 @@ pipeline {
 
   environment {
     VAULT_ADDR = "${upgradeEnvVars.vault_endpoint}"
+    // Optional: initialize to avoid undefined access before assignment
+    ARTIFACTORY_TOKEN = ''
+    DOCKER_PASSWORD = ''
+    SLACK_TOKEN = ''
   }
 
   stages {
     stage('Login to Vault & Retrieve Secrets') {
       steps {
         script {
+          // Get the Vault AppRole token
           def CLIENT_TOKEN = sh(
             script: """vault write -field=token auth/approle/login role_id=${upgradeEnvVars.role_id} secret_id=${params.secret_id}""",
             returnStdout: true
           ).trim()
 
-          // Set token for use in subsequent shell commands
+          // Set Vault token as env var for use in subsequent vault calls
           env.VAULT_TOKEN = CLIENT_TOKEN
 
-          // Get multiple secrets from Vault
-          def ARTIFACTORY_TOKEN = sh(
+          // Retrieve multiple secrets and store them in env vars
+          env.ARTIFACTORY_TOKEN = sh(
             script: """vault kv get -field=artifactory_token secret/cdpae-foundations-store/ocp/artifactory""",
             returnStdout: true
           ).trim()
 
-          def DOCKER_PASSWORD = sh(
+          env.DOCKER_PASSWORD = sh(
             script: """vault kv get -field=docker_password secret/cdpae-foundations-store/ocp/docker""",
             returnStdout: true
           ).trim()
 
-          def SLACK_TOKEN = sh(
+          env.SLACK_TOKEN = sh(
             script: """vault kv get -field=slack_token secret/cdpae-foundations-store/ocp/slack""",
             returnStdout: true
           ).trim()
-
-          // Set them as global env variables
-          env.ARTIFACTORY_TOKEN = ARTIFACTORY_TOKEN
-          env.DOCKER_PASSWORD = DOCKER_PASSWORD
-          env.SLACK_TOKEN = SLACK_TOKEN
         }
       }
     }
 
-    stage('Use Secrets') {
+    stage('Use Secrets in Another Stage') {
       steps {
-        echo "Artifactory Token: ${env.ARTIFACTORY_TOKEN}"
-        echo "Docker Password: ${env.DOCKER_PASSWORD}"
-        echo "Slack Token: ${env.SLACK_TOKEN}"
-        // Here you'd use them in login or API calls, etc.
+        script {
+          echo "✅ Artifactory Token: ${env.ARTIFACTORY_TOKEN.take(4)}********"
+          echo "✅ Docker Password: ${env.DOCKER_PASSWORD.take(4)}********"
+          echo "✅ Slack Token: ${env.SLACK_TOKEN.take(4)}********"
+          // Use the secrets in your deployment, login, or config steps here
+        }
       }
     }
   }
