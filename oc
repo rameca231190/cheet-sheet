@@ -1,55 +1,27 @@
-pipeline {
-  agent any
+stage('Login to Vault & Retrieve Secrets') {
+  steps {
+    script {
+      // Get Vault token using AppRole
+      def CLIENT_TOKEN = sh(
+        script: """
+          export VAULT_ADDR=${upgradeEnvVars.vault_endpoint}
+          vault write -field=token auth/approle/login role_id=${upgradeEnvVars.role_id} secret_id=${params.secret_id}
+        """,
+        returnStdout: true
+      ).trim()
 
-  environment {
-    VAULT_ADDR = "${upgradeEnvVars.vault_endpoint}"
-    // Optional: initialize to avoid undefined access before assignment
-    ARTIFACTORY_TOKEN = ''
-    DOCKER_PASSWORD = ''
-    SLACK_TOKEN = ''
-  }
+      // Set token in env for later use
+      env.VAULT_TOKEN = CLIENT_TOKEN
 
-  stages {
-    stage('Login to Vault & Retrieve Secrets') {
-      steps {
-        script {
-          // Get the Vault AppRole token
-          def CLIENT_TOKEN = sh(
-            script: """vault write -field=token auth/approle/login role_id=${upgradeEnvVars.role_id} secret_id=${params.secret_id}""",
-            returnStdout: true
-          ).trim()
-
-          // Set Vault token as env var for use in subsequent vault calls
-          env.VAULT_TOKEN = CLIENT_TOKEN
-
-          // Retrieve multiple secrets and store them in env vars
-          env.ARTIFACTORY_TOKEN = sh(
-            script: """vault kv get -field=artifactory_token secret/cdpae-foundations-store/ocp/artifactory""",
-            returnStdout: true
-          ).trim()
-
-          env.DOCKER_PASSWORD = sh(
-            script: """vault kv get -field=docker_password secret/cdpae-foundations-store/ocp/docker""",
-            returnStdout: true
-          ).trim()
-
-          env.SLACK_TOKEN = sh(
-            script: """vault kv get -field=slack_token secret/cdpae-foundations-store/ocp/slack""",
-            returnStdout: true
-          ).trim()
-        }
-      }
-    }
-
-    stage('Use Secrets in Another Stage') {
-      steps {
-        script {
-          echo "✅ Artifactory Token: ${env.ARTIFACTORY_TOKEN.take(4)}********"
-          echo "✅ Docker Password: ${env.DOCKER_PASSWORD.take(4)}********"
-          echo "✅ Slack Token: ${env.SLACK_TOKEN.take(4)}********"
-          // Use the secrets in your deployment, login, or config steps here
-        }
-      }
+      // Use VAULT_ADDR and VAULT_TOKEN to get secret
+      env.ARTIFACTORY_TOKEN = sh(
+        script: """
+          export VAULT_ADDR=${upgradeEnvVars.vault_endpoint}
+          export VAULT_TOKEN=${env.VAULT_TOKEN}
+          vault kv get -field=artifactory_token secret/cdpae-foundations-store/ocp/artifactory
+        """,
+        returnStdout: true
+      ).trim()
     }
   }
 }
