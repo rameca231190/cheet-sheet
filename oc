@@ -1,27 +1,21 @@
-stage('Login to Vault & Retrieve Secrets') {
-  steps {
-    script {
-      // Get Vault token using AppRole
-      def CLIENT_TOKEN = sh(
-        script: """
-          export VAULT_ADDR=${upgradeEnvVars.vault_endpoint}
-          vault write -field=token auth/approle/login role_id=${upgradeEnvVars.role_id} secret_id=${params.secret_id}
-        """,
-        returnStdout: true
-      ).trim()
+script {
+  def secretOutput = sh(
+    script: """
+      export VAULT_ADDR=${upgradeEnvVars.vault_endpoint}
+      export VAULT_TOKEN=${env.VAULT_TOKEN}
+      vault kv get -field=key secret/aws/iam/my-user
+    """,
+    returnStdout: true
+  ).trim()
 
-      // Set token in env for later use
-      env.VAULT_TOKEN = CLIENT_TOKEN
+  // Parse AccessKeyId and SecretAccessKey from stringified map
+  env.AWS_ACCESS_KEY_ID = sh(
+    script: """echo '${secretOutput}' | sed 's/.*AccessKeyId:\\([^ ]*\\).*/\\1/'""",
+    returnStdout: true
+  ).trim()
 
-      // Use VAULT_ADDR and VAULT_TOKEN to get secret
-      env.ARTIFACTORY_TOKEN = sh(
-        script: """
-          export VAULT_ADDR=${upgradeEnvVars.vault_endpoint}
-          export VAULT_TOKEN=${env.VAULT_TOKEN}
-          vault kv get -field=artifactory_token secret/cdpae-foundations-store/ocp/artifactory
-        """,
-        returnStdout: true
-      ).trim()
-    }
-  }
+  env.AWS_SECRET_ACCESS_KEY = sh(
+    script: """echo '${secretOutput}' | sed 's/.*SecretAccessKey:\\([^]]*\\).*/\\1/'""",
+    returnStdout: true
+  ).trim()
 }
