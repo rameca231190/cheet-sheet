@@ -1,2 +1,27 @@
-chmod -R 0777 /home/"${tower_user_name}"/ace-shared
-chown -R root:domusers /home/"${tower_user_name}"/ace-shared
+pipeline {
+  agent any
+
+  environment {
+    VAULT_SECRET = '' // initialize
+  }
+
+  stages {
+    stage('Get Vault Secret') {
+      steps {
+        script {
+          def result = sh(
+            script: """vault kv get -field=value secret/myapp/config""",
+            returnStdout: true
+          ).trim()
+          env.VAULT_SECRET = result
+        }
+      }
+    }
+
+    stage('Use Secret in Another Stage') {
+      steps {
+        echo "Vault secret is: ${env.VAULT_SECRET}"
+      }
+    }
+  }
+}
