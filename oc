@@ -1,38 +1,11 @@
-stage('Login to Vault & Retrieve AWS Keys') {
-  steps {
-    script {
-      // 🔐 1. Get Vault token via AppRole login
-      def CLIENT_TOKEN = sh(
-        script: """
-          export VAULT_ADDR=${upgradeEnvVars.vault_endpoint}
-          vault write -field=token auth/approle/login role_id=${upgradeEnvVars.role_id} secret_id=${params.secret_id}
-        """,
-        returnStdout: true
-      ).trim()
+// 4️⃣ Extract AccessKeyId and encode it to base64
+env.AWS_ACCESS_KEY_ID = sh(
+  script: """echo "${secretMapOutput}" | sed 's/.*AccessKeyId:\\([^ ]*\\).*/\\1/' | base64""",
+  returnStdout: true
+).trim()
 
-      env.VAULT_TOKEN = CLIENT_TOKEN
-
-      // 📦 2. Get the full 'key' field from Vault (this includes AccessKeyId + SecretAccessKey in a stringified map)
-      def secretMapOutput = sh(
-        script: """
-          export VAULT_ADDR=${upgradeEnvVars.vault_endpoint}
-          export VAULT_TOKEN=${env.VAULT_TOKEN}
-          vault kv get -field=key secret/aws/iam/my-user
-        """,
-        returnStdout: true
-      ).trim()
-
-      // 🧩 3. Extract AccessKeyId
-      env.AWS_ACCESS_KEY_ID = sh(
-        script: """echo '${secretMapOutput}' | sed 's/.*AccessKeyId:\\([^ ]*\\).*/\\1/'""",
-        returnStdout: true
-      ).trim()
-
-      // 🔐 4. Extract SecretAccessKey
-      env.AWS_SECRET_ACCESS_KEY = sh(
-        script: """echo '${secretMapOutput}' | sed 's/.*SecretAccessKey:\\([^]]*\\).*/\\1/'""",
-        returnStdout: true
-      ).trim()
-    }
-  }
-}
+// 5️⃣ Extract SecretAccessKey and encode it to base64
+env.AWS_SECRET_ACCESS_KEY = sh(
+  script: """echo "${secretMapOutput}" | sed 's/.*SecretAccessKey:\\([^]]*\\).*/\\1/' | base64""",
+  returnStdout: true
+).trim()
