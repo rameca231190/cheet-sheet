@@ -1,17 +1,31 @@
-// Extract AccessKeyId and encode to base64 without logging
-env.AWS_ACCESS_KEY_ID = sh(
-  script: """#!/bin/bash
-    echo '${secretMapOutput}' | sed 's/.*AccessKeyId:\\([^ ]*\\).*/\\1/' | base64
-  """,
-  returnStdout: true,
-  label: 'Extracting AccessKeyId (masked)'
-).trim()
-
-// Extract SecretAccessKey and encode to base64 without logging
-env.AWS_SECRET_ACCESS_KEY = sh(
-  script: """#!/bin/bash
-    echo '${secretMapOutput}' | sed 's/.*SecretAccessKey:\\([^]]*\\).*/\\1/' | base64
-  """,
-  returnStdout: true,
-  label: 'Extracting SecretAccessKey (masked)'
-).trim()
+stage('Initialize Environment') {
+  steps {
+    script {
+      switch (params.environment) {
+        case 'aws-useast1-datalake-dev-1':
+          env.ENVIRONMENT = 'dev-1'
+          break
+        case 'aws-useast1-datalake-dev-2':
+          env.ENVIRONMENT = 'dev-2'
+          break
+        case 'aws-usvest2-datalake-dev-1':
+          env.ENVIRONMENT = 'uswest-dev-1'
+          break
+        case 'aws-useast1-dl-stg-1':
+          env.ENVIRONMENT = 'stage'
+          break
+        case 'aws-useast1-dl-mt-1':
+          env.ENVIRONMENT = 'prodmt'
+          break
+        case 'aws-useast1-dl-me-1':
+          env.ENVIRONMENT = 'prodme'
+          break
+        case 'aws-useast1-dl-pci-1':
+          env.ENVIRONMENT = 'rprod'
+          break
+        default:
+          error "❌ Unknown environment selected: '${params.environment}'"
+      }
+    }
+  }
+}
