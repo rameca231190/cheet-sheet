@@ -1,11 +1,67 @@
-// 4️⃣ Extract AccessKeyId and encode it to base64
-env.AWS_ACCESS_KEY_ID = sh(
-  script: """echo "${secretMapOutput}" | sed 's/.*AccessKeyId:\\([^ ]*\\).*/\\1/' | base64""",
-  returnStdout: true
-).trim()
+stage('Login to Vault & Retrieve Secrets') {
+  steps {
+    script {
+      // 1️⃣ Get Vault token using AppRole
+      def CLIENT_TOKEN = sh(
+        script: """
+          export VAULT_ADDR=${upgradeEnvVars.vault_endpoint}
+          vault write -field=token auth/approle/login role_id=${upgradeEnvVars.role_id} secret_id=${params.secret_id}
+        """,
+        returnStdout: true
+      ).trim()
 
-// 5️⃣ Extract SecretAccessKey and encode it to base64
-env.AWS_SECRET_ACCESS_KEY = sh(
-  script: """echo "${secretMapOutput}" | sed 's/.*SecretAccessKey:\\([^]]*\\).*/\\1/' | base64""",
-  returnStdout: true
-).trim()
+      env.VAULT_TOKEN = CLIENT_TOKEN
+
+      // 2️⃣ Get Artifactory Token
+      env.ARTIFACTORY_TOKEN = sh(
+        script: """
+          export VAULT_ADDR=${upgradeEnvVars.vault_endpoint}
+          export VAULT_TOKEN=${env.VAULT_TOKEN}
+          vault kv get -field=artifactory_token secret/cdpae-foundations-store/ocp/artifactory
+        """,
+        returnStdout: true
+      ).trim()
+
+      // 3️⃣ Determine Vault IAM path based on environment
+      def vaultIamPath = ''
+      switch (params.environment) {
+        case ['aws-useast1-datalake-dev-2', 'aws-useast1-datalake-dev-1', 'aws-usvest2-datalake-dev-1']:
+          vaultIamPath = 'secret/aws-cloud-engineering/iam-users/500869459081/APP_OCP' // dev
+          break
+        case 'aws-useast1-dl-stg-1':
+          vaultIamPath = 'secret/aws-cloud-engineering/iam-users/633828706907/APP_OCP' // stage
+          break
+        case 'aws-useast1-dl-pci-1':
+          vaultIamPath = 'secret/aws-cloud-engineering/iam-users/829733995748/APP_OCP' // rprod
+          break
+        case ['aws-useast1-dl-mt-1', 'aws-useast1-dl-me-1']:
+          vaultIamPath = 'secret/aws-cloud-engineering/iam-users/422707000500/APP_OCP' // prod
+          break
+        default:
+          error("❌ Unsupported environment: ${params.environment}")
+      }
+
+      // 4️⃣ Fetch and parse IAM key output from correct path
+      def secretMapOutput = sh(
+        script: """
+          export VAULT_ADDR=${upgradeEnvVars.vault_endpoint}
+          export VAULT_TOKEN=${env.VAULT_TOKEN}
+          vault kv get -field=key ${vaultIamPath}
+        """,
+        returnStdout: true
+      ).trim()
+
+      // 5️⃣ Extract AccessKeyId and encode to base64
+      env.AWS_ACCESS_KEY_ID = sh(
+        script: """echo "${secretMapOutput}" | sed 's/.*AccessKeyId:\\([^ ]*\\).*/\\1/' | base64""",
+        returnStdout: true
+      ).trim()
+
+      // 6️⃣ Extract SecretAccessKey and encode to base64
+      env.AWS_SECRET_ACCESS_KEY = sh(
+        script: """echo "${secretMapOutput}" | sed 's/.*SecretAccessKey:\\([^]]*\\).*/\\1/' | base64""",
+        returnStdout: true
+      ).trim()
+    }
+  }
+}
