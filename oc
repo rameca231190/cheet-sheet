@@ -1,6 +1,7 @@
 stage('Initialize Environment') {
   steps {
     script {
+      echo "📌 Cluster selected: ${params.environment}"
       switch (params.environment) {
         case 'aws-useast1-datalake-dev-1':
           env.ENVIRONMENT = 'dev-1'
@@ -26,6 +27,7 @@ stage('Initialize Environment') {
         default:
           error "❌ Unknown environment selected: '${params.environment}'"
       }
+      echo "✅ Setting environment tag: ${env.ENVIRONMENT}"
     }
   }
 }
