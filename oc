@@ -1,136 +1,70 @@
-OpenShift Garbage Collector for KubeletConfig: Explanation and Number Determination
+# How systemReserved CPU and Memory Protect Node Stability
 
-1. Purpose of Garbage Collection and Eviction Settings
+## What is systemReserved?
 
-In OpenShift, tuning kubeletConfig garbage collection and eviction thresholds is critical to ensure node stability under varying workloads.
-These settings prevent node crashes by:
-	•	Proactively evicting pods before memory, disk space, or inode exhaustion.
-	•	Automatically cleaning up unused container images to free disk space.
-	•	Protecting the system daemons (like kubelet and CRI-O) from resource starvation.
+`systemReserved` is a kubelet configuration that reserves a specific amount of CPU and memory **only for the node's system processes** (like kubelet, CRI-O/containerd, OS services, logging agents).
 
-Without proper thresholds, nodes risk:
-	•	Unscheduled crashes (OOMKilled errors)
-	•	Full root or image disks
-	•	Failure to schedule or pull new containers
-	•	Complete cluster instability
+- These reserved resources are **not available** for Kubernetes pods.
+- It ensures that even under heavy application load, the system services will always have the CPU and memory they need to function.
 
-⸻
+---
 
-2. Key Sections of KubeletConfig Garbage Collection
+## Why systemReserved Is Critical
 
-a) evictionSoft
+If systemReserved is **not** configured:
+- Kubernetes schedules pods based on nearly the **entire node capacity**.
+- During heavy load, **critical system services** may **starve** for resources.
+- This leads to node instability: kubelet crashes, container runtime crashes, networking failures, and unpredictable pod evictions.
 
-Soft eviction thresholds define early warning conditions:
-If the node exceeds these thresholds for longer than the grace period, it will start gracefully evicting pods.
+By configuring systemReserved:
+- A **portion of CPU and memory is guaranteed** for system operations.
+- **Pods are scheduled** only against the **remaining allocatable resources**.
+- This prevents **resource starvation** and ensures **long-term node health**.
 
-Example:
+---
 
-evictionSoft:
-  memory.available: "2500Mi"
-  nodefs.available: "12%"
-  imagefs.available: "20%"
+## How systemReserved Works
 
-	•	memory.available: If available memory drops below 2500Mi, eviction is considered.
-	•	nodefs.available: If root filesystem free space drops below 12%, eviction is considered.
-	•	imagefs.available: If container image storage free space drops below 20%, eviction is considered.
+When kubelet starts:
+- It **subtracts** the systemReserved resources from the total node capacity.
+- Only the **remaining allocatable resources** are **advertised to the Kubernetes scheduler**.
+- Pods **cannot** consume the reserved resources.
 
-b) evictionSoftGracePeriod
+**Node Resource Formula:**
+```
+Node Allocatable = Node Capacity - systemReserved - kubeReserved - evictionThresholds
+```
 
-Defines how long the node can stay over the evictionSoft threshold before starting evictions.
+(Where `kubeReserved` is usually reserved for Kubernetes internal components, while `systemReserved` is for OS + kubelet/containerd.)
 
-Example:
 
-evictionSoftGracePeriod:
-  memory.available: "2m"
-  nodefs.available: "2m"
-  imagefs.available: "2m"
+### Example:
+| Node | CPU (cores) | Memory (GiB) |
+|:-----|:-----------|:------------|
+| Total Capacity | 16 cores | 61 GiB |
+| systemReserved | 800m CPU | 1.5 GiB memory |
+| Final Allocatable | ~15.2 cores | ~59.5 GiB memory |
 
-If memory is below 2500Mi for more than 2 minutes, pods are evicted.
+Result: **Only 15.2 CPU and 59.5GiB are available for pods.**
 
-c) evictionHard
+Scheduler ensures that pods do not consume the system's reserved resources.
 
-Hard eviction thresholds define immediate eviction conditions.
-When breached, the kubelet instantly evicts pods without waiting.
+---
 
-Example:
+## What Happens Without systemReserved?
 
-evictionHard:
-  memory.available: "1500Mi"
-  nodefs.available: "7%"
-  imagefs.available: "10%"
+- Critical services like kubelet, CRI-O, sshd, auditd could **fail** under load.
+- Nodes become **NotReady** or tainted with conditions like `MemoryPressure`, `DiskPressure`.
+- Pods experience random **evictions** or **deployment failures**.
+- Cluster-wide stability risks increase.
 
-d) evictionPressureTransitionPeriod
 
-Defines a cooldown period to avoid rapid transitions in and out of eviction states.
+---
 
-evictionPressureTransitionPeriod: 3m
+## Summary
 
-e) Garbage Collection Settings
+✅ `systemReserved` guarantees stability by **protecting OS and critical services** on every node.  
+✅ Pods are **only scheduled** against safe, reduced allocatable resources.  
+✅ It is **mandatory for production OpenShift clusters** to avoid unexpected node crashes under high workload.
 
-Settings that control container image garbage collection behavior.
-
-imageGCHighThresholdPercent: 85
-imageGCLowThresholdPercent: 70
-imageMinimumGCAge: 5m
-
-	•	imageGCHighThresholdPercent: If image storage usage exceeds 85%, garbage collection starts.
-	•	imageGCLowThresholdPercent: Garbage collection continues until usage drops to 70%.
-	•	imageMinimumGCAge: Images must be unused for at least 5 minutes before they can be deleted.
-
-⸻
-
-3. How the Numbers Are Determined
-
-The recommended threshold values are based on:
-
-Factor	Impact
-Node Memory Capacity	Soft eviction at 2%-4% free memory. Hard eviction at 1%-2%.
-Root Filesystem Size	Soft eviction at ~12%-15% free space. Hard eviction at ~7%.
-Image Filesystem Size	Soft eviction at ~18%-20% free space. Hard eviction at ~10%.
-Inodes Availability	Soft eviction if <5%-10% free. Hard eviction if <4%-5% free.
-Operational Experience	OpenShift clusters show these are safe margins before crashes happen.
-
-These values provide safe operating buffers without evicting too aggressively under normal load.
-
-References:
-	•	OpenShift Garbage Collection Official Docs
-	•	Kubernetes Node Pressure Eviction
-
-⸻
-
-4. Summary
-
-✅ Eviction thresholds prevent memory and disk exhaustion.
-✅ Garbage collection keeps disk storage healthy by cleaning up unused images.
-✅ Properly tuned KubeletConfig is critical for OpenShift node reliability.
-✅ The thresholds are based on percentages of available resources + real-world OpenShift stability experience.
-
-⸻
-
-📝 Example Final KubeletConfig Block for Garbage Collection
-
-apiVersion: machineconfiguration.openshift.io/v1
-kind: KubeletConfig
-metadata:
-  name: worker-node-gc-eviction
-spec:
-  machineConfigPoolSelector:
-    matchLabels:
-      pools.operator.machineconfiguration.openshift.io/worker: ""
-  kubeletConfig:
-    evictionSoft:
-      memory.available: "2500Mi"
-      nodefs.available: "12%"
-      imagefs.available: "20%"
-    evictionSoftGracePeriod:
-      memory.available: "2m"
-      nodefs.available: "2m"
-      imagefs.available: "2m"
-    evictionHard:
-      memory.available: "1500Mi"
-      nodefs.available: "7%"
-      imagefs.available: "10%"
-    evictionPressureTransitionPeriod: 3m
-    imageMinimumGCAge: 5m
-    imageGCHighThresholdPercent: 85
-    imageGCLowThresholdPercent: 70
+Always calculate `systemReserved` based on node size and workload profile.
