@@ -1,33 +1,157 @@
-stage('Initialize Environment') {
-  steps {
-    script {
-      echo "📌 Cluster selected: ${params.environment}"
-      switch (params.environment) {
-        case 'aws-useast1-datalake-dev-1':
-          env.ENVIRONMENT = 'dev-1'
-          break
-        case 'aws-useast1-datalake-dev-2':
-          env.ENVIRONMENT = 'dev-2'
-          break
-        case 'aws-usvest2-datalake-dev-1':
-          env.ENVIRONMENT = 'uswest-dev-1'
-          break
-        case 'aws-useast1-dl-stg-1':
-          env.ENVIRONMENT = 'stage'
-          break
-        case 'aws-useast1-dl-mt-1':
-          env.ENVIRONMENT = 'prodmt'
-          break
-        case 'aws-useast1-dl-me-1':
-          env.ENVIRONMENT = 'prodme'
-          break
-        case 'aws-useast1-dl-pci-1':
-          env.ENVIRONMENT = 'rprod'
-          break
-        default:
-          error "❌ Unknown environment selected: '${params.environment}'"
-      }
-      echo "✅ Setting environment tag: ${env.ENVIRONMENT}"
-    }
-  }
-}
+# OpenShift Node Resource Management: systemReserved, Eviction, and Garbage Collection Settings
+
+## Purpose
+This document provides best practices for tuning OpenShift node-level resource management, focusing on systemReserved CPU/memory settings first, followed by eviction thresholds and garbage collection configuration. It includes official references from Red Hat support documentation and explains why these changes are recommended based on identified issues.
+
+---
+
+# 1. systemReserved Settings
+
+## Why We Configure systemReserved
+Without reserving CPU and memory explicitly, node services (kubelet, CRI-O, OS daemons) may get starved when user pods consume all resources. This leads to node instability.
+
+The need for proper systemReserved tuning is emphasized in Red Hat KCS article [KCS 5843241](https://access.redhat.com/solutions/5843241) and linked to issues identified in [OCPBUGS-7747](https://issues.redhat.com/browse/OCPBUGS-7747), where automatic sizing (`autoSizingReserved: true`) was allocating insufficient CPU.
+
+**Key Points:**
+- Critical services must have guaranteed CPU and memory.
+- OpenShift defaults are sometimes inadequate depending on cluster workloads.
+- Red Hat recommends manual tuning for production clusters.
+
+## Explanation of Each Value
+- **CPU Reserved (`cpu`)**: Protects kubelet, CRI-O/containerd, and OS services from CPU starvation.
+- **Memory Reserved (`memory`)**: Guarantees RAM availability for system processes during load surges.
+
+## How to Calculate systemReserved
+
+| Node Size | CPU Reserved | Memory Reserved |
+|:---|:---|:---|
+| 16 CPU / 61Gi RAM | 800m CPU (5%) | 1.5Gi memory (2.5%) |
+| 32 CPU / 123Gi RAM | 1600m CPU (5%) | 2.5Gi memory (2%) |
+
+Typical recommendation:
+- **CPU**: Reserve 2%–5% of total CPU cores.
+- **Memory**: Reserve 2%–5% of total memory.
+
+**Example systemReserved block:**
+```yaml
+systemReserved:
+  cpu: 1600m
+  memory: 2500Mi
+```
+
+---
+
+# 2. Eviction and Garbage Collection Thresholds
+
+## Why We Tune Eviction and Garbage Collection
+Eviction thresholds prevent node crashes due to memory, disk, or inode exhaustion by gracefully evicting pods before the situation becomes critical. Garbage collection removes unused images and containers from disk to prevent disk saturation.
+
+Official guidance from Red Hat is available at [KCS 5843241](https://access.redhat.com/solutions/5843241). Improper resource management caused real production issues as documented in [OCPBUGS-7747](https://issues.redhat.com/browse/OCPBUGS-7747).
+
+## EvictionSoft
+Defines "early warning" thresholds. If the resource condition persists for longer than the grace period, pods will be evicted gracefully.
+
+```yaml
+evictionSoft:
+  memory.available: "2500Mi"
+  nodefs.available: "12%"
+  imagefs.available: "20%"
+```
+
+## EvictionSoftGracePeriod
+How long a resource condition can persist before eviction starts.
+
+```yaml
+evictionSoftGracePeriod:
+  memory.available: "2m"
+  nodefs.available: "2m"
+  imagefs.available: "2m"
+```
+
+## EvictionHard
+Defines the critical threshold. If breached, pods are immediately evicted.
+
+```yaml
+evictionHard:
+  memory.available: "1500Mi"
+  nodefs.available: "7%"
+  imagefs.available: "10%"
+```
+
+## How to Calculate Eviction Threshold Values
+
+| Resource | Rule | Example for Worker (123Gi RAM) |
+|:---|:---|:---|
+| memory.available (soft) | 2%-4% of total memory | 2500Mi |
+| memory.available (hard) | 1%-2% of total memory | 1500Mi |
+| nodefs.available (soft) | 12%-15% free | 12% |
+| nodefs.available (hard) | 7%-8% free | 7% |
+| imagefs.available (soft) | 18%-20% free | 20% |
+| imagefs.available (hard) | 10%-12% free | 10% |
+
+Inodes thresholds:
+- Soft eviction if < 5%-10% free
+- Hard eviction if < 4%-5% free
+
+## Garbage Collection Settings
+```yaml
+imageGCHighThresholdPercent: 85
+imageGCLowThresholdPercent: 70
+imageMinimumGCAge: 5m
+```
+
+- **imageGCHighThresholdPercent**: Start GC if disk usage > 85%
+- **imageGCLowThresholdPercent**: GC until disk usage is reduced to 70%
+- **imageMinimumGCAge**: Do not delete images that are used within the last 5 minutes
+
+More official information: [OpenShift Garbage Collection Guide](https://docs.openshift.com/container-platform/latest/nodes/nodes-nodes-managing.html#nodes-nodes-containerruntime-container-garbage-collection_nodes-nodes-managing)
+
+---
+
+# 3. Full Example KubeletConfig YAML (Worker Node)
+```yaml
+apiVersion: machineconfiguration.openshift.io/v1
+kind: KubeletConfig
+metadata:
+  name: worker-node-tuning
+spec:
+  machineConfigPoolSelector:
+    matchLabels:
+      pools.operator.machineconfiguration.openshift.io/worker: ""
+  kubeletConfig:
+    systemReserved:
+      cpu: 1600m
+      memory: 2500Mi
+    evictionSoft:
+      memory.available: "2500Mi"
+      nodefs.available: "12%"
+      imagefs.available: "20%"
+    evictionSoftGracePeriod:
+      memory.available: "2m"
+      nodefs.available: "2m"
+      imagefs.available: "2m"
+    evictionHard:
+      memory.available: "1500Mi"
+      nodefs.available: "7%"
+      imagefs.available: "10%"
+    evictionPressureTransitionPeriod: 3m
+    imageMinimumGCAge: 5m
+    imageGCHighThresholdPercent: 85
+    imageGCLowThresholdPercent: 70
+```
+
+---
+
+# Conclusion
+Correct tuning of systemReserved, eviction thresholds, and garbage collection protects OpenShift nodes from instability. Red Hat advises these adjustments based on field experience and bugs such as OCPBUGS-7747.
+
+Always validate changes in a staging environment before applying them cluster-wide.
+
+---
+
+# References
+- [Red Hat KCS: Recommended System Reservations](https://access.redhat.com/solutions/5843241)
+- [OCPBUGS-7747: autoSizingReserved Bug](https://issues.redhat.com/browse/OCPBUGS-7747)
+- [OpenShift Garbage Collection Guide](https://docs.openshift.com/container-platform/latest/nodes/nodes-nodes-managing.html#nodes-nodes-containerruntime-container-garbage-collection_nodes-nodes-managing)
+- [Kubernetes Node Pressure Eviction](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/)
+
