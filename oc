@@ -1,8 +1,97 @@
-- name: Set group ownership and permissions on /home/{{ tower_user_name }}/ai-eng
-  delegate_to: "{{ item }}"
-  file:
-    path: "/home/{{ tower_user_name }}/ai-eng"
-    state: directory
-    owner: "{{ tower_user_name }}"
-    group: "ai-eng-group"     # Replace with your actual group
-    mode: "0770"              # rwx for owner & group, no access for others
+# 📦 Developer Guide: Creating a Shared PVC Using EFS (Elastic File System)
+
+This guide explains how developers can easily provision a shared PersistentVolumeClaim (PVC) backed by Amazon EFS. When this PVC is created in the appropriate namespace, it automatically binds to a preconfigured PersistentVolume (PV) that uses a shared EFS file system.
+
+---
+
+## 🧩 PVC Template for Shared EFS
+
+You can copy and reuse the following YAML template to create your PVC in your application namespace. This PVC will connect to a **shared EFS volume** via the storage class `cluster-efs`.
+
+```yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: test-shared-efs-pvc       # ✅ Replace with a unique name for your app
+  namespace: edas-bipoc-dev       # ✅ Replace with your target namespace
+spec:
+  accessModes:
+    - ReadWriteMany               # ✅ Recommended for EFS usage (shared RW)
+  resources:
+    requests:
+      storage: 5Gi                # ✅ Adjust storage size as needed
+  storageClassName: cluster-efs   # ✅ Must match the pre-configured EFS class
+  volumeMode: Filesystem
+```
+
+✅ **Once this PVC is applied, a matching PV will automatically be created** (thanks to the dynamic provisioning support of EFS).
+
+---
+
+## 🚀 Example: Referencing the PVC in a Deployment
+
+Here’s how you can use the PVC in your Kubernetes `Deployment` or `StatefulSet` manifest:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  namespace: edas-bipoc-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: app-container
+          image: your-app-image:latest
+          volumeMounts:
+            - name: shared-data
+              mountPath: /mnt/shared-data    # ✅ This is where your app can read/write
+      volumes:
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: test-shared-efs-pvc   # ✅ Must match the PVC name
+```
+
+This configuration mounts your shared EFS-based PVC at `/mnt/shared-data` inside the container.
+
+---
+
+## 📌 Important Notes
+
+* ✅ Use `ReadWriteMany` for EFS so multiple pods or services can access the data concurrently.
+* ✅ Make sure the PVC name is unique within the namespace.
+* ✅ The storage size (e.g. `5Gi`) is a placeholder. EFS allows elastic growth — but the value must be specified.
+
+---
+
+## 📮 Need a Dedicated PVC?
+
+If your application requires a **dedicated PVC (not shared)** or a **custom storage class**, please submit an **INC request** to the **Foundations Team**.
+
+* **Assignment Group:** `<Cloud Foundations>`
+* Include details such as:
+
+  * Namespace
+  * Required storage size
+  * Access mode (e.g., ReadWriteOnce)
+  * Justification (why a dedicated volume is needed)
+
+---
+
+## ✅ Summary
+
+| Task              | Action                                                       |
+| ----------------- | ------------------------------------------------------------ |
+| Create shared PVC | Use the YAML template above with `cluster-efs` storage class |
+| Mount in app      | Reference the PVC in your Deployment manifest                |
+| Need custom PVC?  | Open INC with assignment group `<Cloud Foundations>`         |
+
+For any other storage or PVC-related questions, reach out to the platform team. Happy deploying! 🚀
