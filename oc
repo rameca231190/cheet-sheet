@@ -1,15 +1,23 @@
-sudo mount -t nfs4 -o nfsvers=4.1 fs-84647b71.efs.us-east-1.amazonaws.com:/ai-eng /mnt/test
+---
+- name: Ensure amazon-efs-utils is installed
+  hosts: all
+  become: yes
+  tasks:
+    - name: Check if amazon-efs-utils is installed
+      shell: "rpm -q amazon-efs-utils || dpkg -l | grep amazon-efs-utils"
+      register: efs_check
+      ignore_errors: yes
 
+    - name: Install amazon-efs-utils if not present (RHEL/CentOS/Amazon Linux)
+      yum:
+        name: amazon-efs-utils
+        state: present
+      when: efs_check.rc != 0
+      tags: efs-utils
 
-# Define your variables
-efs_id="fs-xxxxxxxx"
-region="us-east-1"
-access_point_id="fsap-087264ee9ed33c076"
-mount_path="/ml-ace-efs/ai-eng"
-
-# Create the mount path if it doesn't exist
-sudo mkdir -p "$mount_path"
-
-# Mount the EFS access point
-sudo mount -t efs -o tls,_netdev,iam,accesspoint=${access_point_id} \
-"${efs_id}.efs.${region}.amazonaws.com:/" "$mount_path"
+    - name: Install amazon-efs-utils if not present (Debian/Ubuntu)
+      apt:
+        name: amazon-efs-utils
+        state: present
+      when: efs_check.rc != 0
+      tags: efs-utils
