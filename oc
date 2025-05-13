@@ -1,9 +1,15 @@
-rpm -q --queryformat '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' stunnel
+mkdir -p /tmp/stunnel-5.71-2.el8_10.x86_64
 
-rpm -q --queryformat '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' stunnel
+rpm -ql stunnel
 
-rpm -ql stunnel | xargs -I {} cp {} /tmp/stunnel-5.71-2.el8_10.x86_64/
+for file in $(rpm -ql stunnel); do
+  # Check if it's a directory or a file and copy accordingly
+  if [ -d "$file" ]; then
+    mkdir -p /tmp/stunnel-5.71-2.el8_10.x86_64${file}
+  elif [ -f "$file" ]; then
+    cp -p --parents "$file" /tmp/stunnel-5.71-2.el8_10.x86_64
+  fi
+done
+
 
 tar -czvf /tmp/stunnel-5.71-2.el8_10.x86_64.tar.gz -C /tmp/stunnel-5.71-2.el8_10.x86_64 .
-
-scp /tmp/stunnel-5.71-2.el8_10.x86_64.tar.gz user@other-server:/tmp/
