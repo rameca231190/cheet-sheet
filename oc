@@ -65,3 +65,10 @@ tar -xzvf /tmp/stunnel-5.71-2.el8_10.x86_64.tar.gz -C /
 
 sudo systemctl restart stunnel
 sudo systemctl status stunnel
+
+
+
+
+curl -u <username>:<password> \
+     --upload-file /root/stunnel-rpm/RPMS/stunnel-5.71-2.el8_10.x86_64.tar.gz \
+     "http://<nexus_server>:8081/repository/my-raw-repo/stunnel/stunnel-5.71-2.el8_10.x86_64.tar.gz"
