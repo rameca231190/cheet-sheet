@@ -1,1 +1,9 @@
-wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+rpm -q --queryformat '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' stunnel
+
+rpm -q --queryformat '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' stunnel
+
+rpm -ql stunnel | xargs -I {} cp {} /tmp/stunnel-5.71-2.el8_10.x86_64/
+
+tar -czvf /tmp/stunnel-5.71-2.el8_10.x86_64.tar.gz -C /tmp/stunnel-5.71-2.el8_10.x86_64 .
+
+scp /tmp/stunnel-5.71-2.el8_10.x86_64.tar.gz user@other-server:/tmp/
