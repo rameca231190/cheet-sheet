@@ -72,3 +72,21 @@ sudo systemctl status stunnel
 curl -u <username>:<password> \
      --upload-file /root/stunnel-rpm/RPMS/stunnel-5.71-2.el8_10.x86_64.tar.gz \
      "http://<nexus_server>:8081/repository/my-raw-repo/stunnel/stunnel-5.71-2.el8_10.x86_64.tar.gz"
+
+
+
+sudo tee /etc/systemd/system/stunnel.service <<EOF
+[Unit]
+Description=Stunnel - TLS/SSL tunnel for network services
+Documentation=man:stunnel(8)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/stunnel /etc/stunnel/stunnel.conf
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
