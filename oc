@@ -12,3 +12,16 @@ sudo make install
 sudo ldconfig
 
 
+--------
+
+curl -O https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/Packages/t/tesseract-4.1.1-2.el8.x86_64.rpm
+
+
+
+
+sudo yum localinstall tesseract-4.1.1-2.el8.x86_64.rpm -y
+
+curl -O https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/Packages/t/tesseract-langpack-eng-4.1.1-2.el8.noarch.rpm
+sudo yum localinstall tesseract-langpack-eng-4.1.1-2.el8.noarch.rpm -y
+
+tesseract --version
