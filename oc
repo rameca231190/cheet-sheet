@@ -132,3 +132,7 @@ cat output.txt
 ```
 
 If the text from the image is correctly saved in `output.txt`, Tesseract is properly installed.
+
+
+
+curl -O https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Example.png/800px-Example.png -o sample_image.png
