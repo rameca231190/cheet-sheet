@@ -1,92 +1,14 @@
-mkdir -p /root/stunnel-rpm/BUILD
-mkdir -p /root/stunnel-rpm/RPMS
-mkdir -p /root/stunnel-rpm/SOURCES
-mkdir -p /root/stunnel-rpm/SPECS
-mkdir -p /root/stunnel-rpm/SRPMS
-mkdir -p /root/stunnel-rpm/BUILDROOT/stunnel-5.71-2.el8_10.x86_64
+sudo yum groupinstall "Development Tools" -y
+sudo yum install leptonica leptonica-devel pkgconfig -y
+sudo yum install cairo pango icu libicu libicu-devel -y
+
+git clone https://github.com/tesseract-ocr/tesseract.git
+cd tesseract
+
+./autogen.sh
+./configure
+make
+sudo make install
+sudo ldconfig
 
 
-cp -r /tmp/stunnel-5.71-2.el8_10.x86_64/* /root/stunnel-rpm/BUILDROOT/stunnel-5.71-2.el8_10.x86_64/
-
-
-
-
-cat <<EOF > /root/stunnel-rpm/SPECS/stunnel.spec
-Name: stunnel
-Version: 5.71
-Release: 2.el8_10
-Summary: Stunnel - TLS/SSL tunneling application
-License: GPLv2+
-Group: Applications/Internet
-BuildRoot: %{_topdir}/BUILDROOT
-AutoReqProv: no
-
-%description
-Stunnel is a program that allows you to encrypt arbitrary TCP connections inside SSL (Secure Sockets Layer) available on both UNIX and Windows.
-
-%files
-/usr/bin/stunnel
-/usr/lib64/stunnel
-/usr/share/man/man8/stunnel.8.gz
-
-%prep
-%setup -q
-
-%install
-cp -r /root/stunnel-rpm/BUILDROOT/stunnel-5.71-2.el8_10.x86_64/* %{buildroot}
-
-%clean
-rm -rf %{buildroot}
-
-%post
-echo "Stunnel installed successfully."
-
-%changelog
-* Fri May 13 2025 Roman Pereverziev - 5.71-2
-- Rebuilt from existing installation.
-EOF
-
-
-
-
-cd /root/stunnel-rpm/BUILDROOT/
-tar -czvf /root/stunnel-rpm/RPMS/stunnel-5.71-2.el8_10.x86_64.tar.gz stunnel-5.71-2.el8_10.x86_64/
-
-
-
-
-scp /root/stunnel-rpm/RPMS/stunnel-5.71-2.el8_10.x86_64.tar.gz user@other-server:/tmp/
-
-
-
-tar -xzvf /tmp/stunnel-5.71-2.el8_10.x86_64.tar.gz -C /
-
-
-
-sudo systemctl restart stunnel
-sudo systemctl status stunnel
-
-
-
-
-curl -u <username>:<password> \
-     --upload-file /root/stunnel-rpm/RPMS/stunnel-5.71-2.el8_10.x86_64.tar.gz \
-     "http://<nexus_server>:8081/repository/my-raw-repo/stunnel/stunnel-5.71-2.el8_10.x86_64.tar.gz"
-
-
-
-sudo tee /etc/systemd/system/stunnel.service <<EOF
-[Unit]
-Description=Stunnel - TLS/SSL tunnel for network services
-Documentation=man:stunnel(8)
-After=network.target
-
-[Service]
-ExecStart=/usr/bin/stunnel /etc/stunnel/stunnel.conf
-ExecReload=/bin/kill -HUP $MAINPID
-KillMode=process
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-EOF
