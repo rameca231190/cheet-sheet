@@ -21,7 +21,7 @@ https://download.rockylinux.org/pub/rocky/8/AppStream/x86_64/os/Packages/t/tesse
 sudo dnf install leptonica leptonica-devel libicu libicu-devel -y
 
 
-
+sudo dnf localinstall tesseract-4.1.1-2.el8.x86_64.rpm -y
 
 sudo yum localinstall tesseract-4.1.1-2.el8.x86_64.rpm -y
 
