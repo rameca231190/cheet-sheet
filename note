@@ -1,0 +1,17 @@
+- name: Check if system is already registered
+  delegate_to: "{{ PrivateIpAddress }}"
+  shell: |
+    subscription-manager status | grep -q 'Overall Status: Current'
+  register: subscription_check
+  ignore_errors: yes
+
+- name: Register the system if not already registered
+  delegate_to: "{{ PrivateIpAddress }}"
+  shell: |
+    subscription-manager register --org=Discover_Financial --activationkey="{{ activa }}" --force
+  when: subscription_check.rc != 0
+  retries: 5
+  delay: 20
+  ignore_errors: yes
+  register: subscription_result
+  until: subscription_result.rc == 0
