@@ -1,3 +1,9 @@
 curl -O https://ftp.unicamp.br/pub/centos/8/BaseOS/x86_64/os/Packages/stunnel-5.56-5.el8_3.x86_64.rpm
 
 curl -O https://dl.rockylinux.org/vault/rocky/8.4/BaseOS/x86_64/os/Packages/stunnel-5.56-5.el8_3.x86_64.rpm
+
+openssl s_client -connect 10.52.73.123:8089 -tlsextdebug -msg
+
+export OPENSSL_NO_DEFAULT_ZLIB=1
+
+ldd /usr/bin/<your-binary> | grep zlib
